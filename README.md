@@ -1,7 +1,7 @@
 ## Enzyme name: Galactosidase Alpha
 ## Gene symbol: GLA
 ## NCBI link
-- 
+- https://www.ncbi.nlm.nih.gov/protein/NP_001393676.1
 
 ## Brief function/description
 - 
