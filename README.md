@@ -1,3 +1,4 @@
+## Name: Angela B. Villegas 
 ## Enzyme name: Alpha-galactosidase A
 ## Gene symbol: GLA
 ## NCBI link
@@ -6,11 +7,180 @@
 ## Brief function/description
 - Alpha-galactosidase A is a lysosomal enzyme encoded by the GLA gene. It breaks down globotriaosylceramide (Gb3) and other glycolipids by removing terminal alpha-galactose residues. This helps prevent the accumulation of these substances inside cells and supports normal cellular function.
 
+
+## Step 1. Retrieval of the Protein Sequence
+
+Objective: To retrieve the full-length protein sequence of the selected human lysosomal enzyme from NCBI.
+
+Code used:
+
+install.packages(c("rentrez", "ggplot2"))
+
+library(rentrez)
+library(ggplot2)
+
+cat("Required packages are loaded.\n")
+
+fasta <- rentrez::entrez_fetch(
+  db = "protein",
+  id = accession,
+  rettype = "fasta",
+  retmode = "text"
+)
+
+fasta_lines <- trimws(strsplit(fasta, "\n", fixed = TRUE)[[1]])
+
+headers <- startsWith(fasta_lines, ">")
+
+if (sum(headers) != 1L) {
+  stop("Expected exactly one FASTA protein record.")
+}
+
+protein <- toupper(paste(fasta_lines[!headers], collapse = ""))
+protein <- gsub("[[:space:]]", "", protein)
+
+if (!nzchar(protein) ||
+    grepl("[^A-Z]", protein) ||
+    nchar(protein) < 20L) {
+  stop("Check the downloaded protein sequence.")
+}
+
+writeLines(
+  fasta,
+  file.path("data", paste0(gene, ".fasta"))
+)
+
+cat("Gene:", gene, "\n")
+cat("Accession:", accession, "\n")
+cat("Sequence length:", nchar(protein), "characters\n")
+cat("FASTA file saved successfully.\n")
+cat("First 60 amino acids:\n")
+cat(substr(protein, 1, 60), "\n")
+
+Result:
+<img width="1920" height="1094" alt="714" src="https://github.com/user-attachments/assets/d4aa4cb5-3610-4ab4-9991-490cce0fd3d6" />
+
+## Step 2. Protein Length and Amino Acid Composition
+
+Objective: To determine the total number of amino acids and their frequencies in the protein.
+
+Code used:
+
+amino_acids <- strsplit(protein, "", fixed = TRUE)[[1]]
+
+protein_length <- length(amino_acids)
+
+standard_aa <- strsplit(
+  "ACDEFGHIKLMNPQRSTVWY",
+  "",
+  fixed = TRUE
+)[[1]]
+
+counts <- table(
+  factor(amino_acids, levels = standard_aa)
+)
+
+composition <- data.frame(
+  amino_acid = standard_aa,
+  count = as.integer(counts),
+  percent = round(
+    100 * as.integer(counts) / protein_length,
+    2
+  )
+)
+
+cat("Total protein length:", protein_length, "amino acids\n")
+cat("\nAmino acid composition:\n")
+
+print(composition)
+
+cat("\nFive most common amino acids:\n")
+
+print(
+  head(
+    composition[order(-composition$count), ],
+    5
+  )
+)
+
+Result:
+<img width="1200" height="1162" alt="716" src="https://github.com/user-attachments/assets/8be5808b-75d1-47de-954f-7cbc42ead651" />
+
+<img width="1200" height="1146" alt="718" src="https://github.com/user-attachments/assets/0b619b6e-4399-466a-9020-972db2cd53e8" />
+
+## Step 3. Potential N-Glycosylation Motifs
+
+Objective: To identify potential N-glycosylation motifs in the protein sequence.
+
+Code used:
+
+if (protein_length >= 3L) {
+
+  i <- seq_len(protein_length - 2L)
+
+  positions <- i[
+    amino_acids[i] == "N" &
+    amino_acids[i + 1L] %in% setdiff(standard_aa, "P") &
+    amino_acids[i + 2L] %in% c("S", "T")
+  ]
+
+} else {
+
+  positions <- integer(0)
+
+}
+
+motifs <- if (length(positions) > 0) {
+  substring(protein, positions, positions + 2L)
+} else {
+  character(0)
+}
+
+motif_table <- data.frame(
+  position = positions,
+  motif = motifs
+)
+
+cat("Potential N-glycosylation motifs found:",
+    length(positions), "\n")
+
+cat("\nMotif positions and sequences:\n")
+print(motif_table)
+
+write.csv(
+  motif_table,
+  "results/GLA_motif_positions.csv",
+  row.names = FALSE
+)
+
+# Save the protein and motif summary
+
+summary_table <- data.frame(
+  gene = gene,
+  accession = accession,
+  length_amino_acids = protein_length,
+  potential_N_glycosylation_motifs = length(positions)
+)
+
+write.csv(
+  summary_table,
+  "results/GLA_summary.csv",
+  row.names = FALSE
+)
+
+print(summary_table)
+
+Result:
+<img width="1920" height="1013" alt="720" src="https://github.com/user-attachments/assets/df229d2c-8acb-4fb8-9686-cfd5251315c9" />
+
+## Step 4. Visualization and Summary
+
+Objective: To visualize the amino acid composition and the positions of potential N-glycosylation motifs.
+
 ## Figures 
 <img width="2400" height="1350" alt="698" src="https://github.com/user-attachments/assets/144c5f90-052c-429b-9354-9facfdba90a8" />
 
 <img width="2400" height="990" alt="703" src="https://github.com/user-attachments/assets/a67dd56b-4e02-41bd-b10a-eae976a12ddd" />
-
 
 ## Answers
 
